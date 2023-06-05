@@ -1,11 +1,5 @@
 # Exentriq-GAIA.bc365
-
-
-Foobar is a Python library for dealing with word pluralization.
-
 ## Installation
-
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
 
 ```bash
 npm install node-red-contrib-business-central-connection@https://github.com/ExentriqLtd/Exentriq-GAIA.bc365
@@ -14,7 +8,7 @@ npm install node-red-contrib-business-central-connection@https://github.com/Exen
 ## Usage
 
 ```
-.....
+.....to use the node-red flow take the flow.js in example flow in the: https://github.com/ExentriqLtd/Exentriq-GAIA.bc365
 ```
 
 ## License
