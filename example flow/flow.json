@@ -1,0 +1,1003 @@
+[
+    {
+        "id": "865f1ecc72bcc747",
+        "type": "tab",
+        "label": "Flow Example Items",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "41142cae37ed8216",
+        "type": "tab",
+        "label": "Flow Example Movimenti_c_g_excel",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "b524a609e49d509e",
+        "type": "MySQLdatabase",
+        "name": "",
+        "host": "127.0.0.1",
+        "port": "3306",
+        "db": "noderedschema",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "2789cb1265da0191",
+        "type": "MySQLdatabase",
+        "name": "",
+        "host": "127.0.0.1",
+        "port": "3306",
+        "db": "schema_bc365",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "86347ed3bc407bd4",
+        "type": "mysql",
+        "z": "865f1ecc72bcc747",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 750,
+        "y": 560,
+        "wires": [
+            [
+                "1983271eb5ea0e81"
+            ]
+        ]
+    },
+    {
+        "id": "793ba75a60322f43",
+        "type": "business-central-connection",
+        "z": "865f1ecc72bcc747",
+        "tenant": "",
+        "clientID": "",
+        "clientSecret": "",
+        "baseUrl": "https://api.businesscentral.dynamics.com/v2.0/",
+        "scope": "https://api.businesscentral.dynamics.com/.default",
+        "grantType": "client_credentials",
+        "code": "code",
+        "redirectUri": "redirect uri",
+        "servicesDropDown": "",
+        "servicesMethods": "",
+        "environment": "Production",
+        "company": "",
+        "append": "ServiziWeb",
+        "x": 290,
+        "y": 200,
+        "wires": [
+            [
+                "a14bd94c8dfda147"
+            ]
+        ]
+    },
+    {
+        "id": "f6806c47a089c373",
+        "type": "inject",
+        "z": "865f1ecc72bcc747",
+        "name": "",
+        "props": [],
+        "repeat": "86400",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 130,
+        "y": 160,
+        "wires": [
+            [
+                "ee4fbb76b0d28d85"
+            ]
+        ]
+    },
+    {
+        "id": "ee4fbb76b0d28d85",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "Array JSON Filter Parametri Richiesta",
+        "func": "/*msg.payload = {\n    \"filter\": [\n        {\n            \"Field\": \"Last_Date_Modified\",\n            \"Criteria\": \"2023-05-26\",\n        }\n    ],\n    \"setSize\": 5\n};*/\nmsg.payload = {};\nreturn msg;  ",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 160,
+        "wires": [
+            [
+                "793ba75a60322f43"
+            ]
+        ]
+    },
+    {
+        "id": "fee0308c3e2c2539",
+        "type": "mysql",
+        "z": "865f1ecc72bcc747",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 190,
+        "y": 500,
+        "wires": [
+            [
+                "1983271eb5ea0e81"
+            ]
+        ]
+    },
+    {
+        "id": "a14bd94c8dfda147",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "SQL check TABLE exist with count",
+        "func": "msg.topic = \"SELECT COUNT(*) AS TOT FROM information_schema.tables WHERE table_schema = 'schema_bc365' AND table_name = 'items';\";\nmsg.bc365 = msg.payload;\nmsg.response = msg.payload;\nreturn msg;\n\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 240,
+        "wires": [
+            [
+                "79bf0d2a561b49bd"
+            ]
+        ]
+    },
+    {
+        "id": "79bf0d2a561b49bd",
+        "type": "mysql",
+        "z": "865f1ecc72bcc747",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 290,
+        "y": 280,
+        "wires": [
+            [
+                "ddd8612a99751455"
+            ]
+        ]
+    },
+    {
+        "id": "e07e5c9724ca8299",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "CREATE TABLE",
+        "func": "const tableName = 'items'; // items\nconst primaryKey = 'No'; // No\n\nconst dataArray = msg.bc365; // Assuming msg.bc365 contains the array of JSON objects\n\n// Extract all unique column names from all objects in the array\nconst columnsSet = new Set();\ndataArray.forEach(obj => {\n    const keys = Object.keys(obj);\n    keys.forEach(key => {\n        if (key !== primaryKey) {\n            columnsSet.add(key);\n        }\n    });\n});\n\nconst columns = Array.from(columnsSet); // Convert the Set to an array\n\nvar createTableQuery = `CREATE TABLE IF NOT EXISTS \\`${tableName}\\` (`;\ncreateTableQuery += `\\`${primaryKey}\\` VARCHAR(255) PRIMARY KEY,`; // Primary key column using \"Key\" column\n\n// Generate the CREATE TABLE query\nfor (var i = 0; i < columns.length; i++) {\n    createTableQuery += `\\`${columns[i]}\\` VARCHAR(255)`;\n\n    if (i !== columns.length - 1) {\n        createTableQuery += \",\";\n    }\n}\n\ncreateTableQuery += \") ENGINE=InnoDB\";\n\nmsg.topic = createTableQuery;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 180,
+        "y": 460,
+        "wires": [
+            [
+                "fee0308c3e2c2539"
+            ]
+        ]
+    },
+    {
+        "id": "ddd8612a99751455",
+        "type": "switch",
+        "z": "865f1ecc72bcc747",
+        "name": "",
+        "property": "msg.payload[0].TOT",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "0",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 330,
+        "y": 340,
+        "wires": [
+            [
+                "6a8846748d04774e"
+            ],
+            [
+                "e07e5c9724ca8299",
+                "2df85975d3750878"
+            ]
+        ]
+    },
+    {
+        "id": "dbd9f7c224c61112",
+        "type": "mysql",
+        "z": "865f1ecc72bcc747",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 570,
+        "y": 460,
+        "wires": [
+            [
+                "f16e7b462d07d965"
+            ]
+        ]
+    },
+    {
+        "id": "6a8846748d04774e",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "Select Colonne Già esistenti a DB",
+        "func": "const tableName = 'items';\nconst query = `\n    SELECT column_name\n    FROM information_schema.columns\n    WHERE table_name = '${tableName}'\n`;\nmsg.topic =query;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 400,
+        "wires": [
+            [
+                "dbd9f7c224c61112"
+            ]
+        ]
+    },
+    {
+        "id": "f16e7b462d07d965",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "ALTER TABLE",
+        "func": "const tableName = 'items';\nconst existingColumns = msg.payload;\nconst dataArray = msg.bc365; // Assuming msg.bc365 contains the array of JSON objects\n\nlet alterTableQuery = `ALTER TABLE ${tableName} `;\nlet columnList = '';\n\n// Iterate over each object in the data array\nfor (let j = 0; j < dataArray.length; j++) {\n    const data = dataArray[j];\n\n    // Iterate over the JSON object keys to extract column names\n    for (const key in data) {\n        if (data.hasOwnProperty(key)) {\n            let columnExists = false;\n            let columnToAdd = key;\n\n            // Check if the column already exists\n            for (let i = 0; i < existingColumns.length; i++) {\n                const column = existingColumns[i].COLUMN_NAME;\n                if (key === column) {\n                    columnExists = true;\n                    break;\n                }\n            }\n\n            // Check if the column is already in the columnList\n            if (!columnExists && !columnList.includes(columnToAdd)) {\n                columnList += `ADD COLUMN ${columnToAdd} VARCHAR(255), `;\n            }\n        }\n    }\n}\n\n// Check if there are missing columns\nif (columnList.length > 0) {\n    // Remove the trailing comma and space\n    columnList = columnList.slice(0, -2);\n    alterTableQuery += columnList;\n\n    msg.topic = alterTableQuery;\n} else {\n    // No missing columns, set alterTableQuery to an empty string\n    alterTableQuery = '';\n    msg.error = 'No columns to add.';\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 500,
+        "wires": [
+            [
+                "86347ed3bc407bd4"
+            ]
+        ]
+    },
+    {
+        "id": "690fc13215850a00",
+        "type": "comment",
+        "z": "865f1ecc72bcc747",
+        "name": "for Create table",
+        "info": "Crea una tabella con un colonna Key come chiave primaria",
+        "x": 180,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "0a107e8f03461efd",
+        "type": "comment",
+        "z": "865f1ecc72bcc747",
+        "name": "for Alter Table",
+        "info": "Controlla le colonne presenti sulla tabella,\nandando ad aggiungere quelle mancanti, qualora vi siano.",
+        "x": 770,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "492870237e5ac3cd",
+        "type": "comment",
+        "z": "865f1ecc72bcc747",
+        "name": "for BC365",
+        "info": "Configura i parametri relativi all'applicazione BC365 a cui vuoi connetterti\nseleziona il WS, il Metodo e l'action\nvisualizza il JSON dove verrà mostrato i parametri del metodo con cui potrei effettuare la richiesta.(Array JSON P.R.)",
+        "x": 460,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "a9ac83435da58278",
+        "type": "comment",
+        "z": "865f1ecc72bcc747",
+        "name": "Sync Node items Dynamic with BC365",
+        "info": "",
+        "x": 190,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "c82b8c49b444db88",
+        "type": "comment",
+        "z": "865f1ecc72bcc747",
+        "name": "settato per Items Read Multiple",
+        "info": "",
+        "x": 190,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "1073100e92105454",
+        "type": "comment",
+        "z": "865f1ecc72bcc747",
+        "name": "CREATE/ALTER TABLE",
+        "info": "se la tabella non esiste la crea con tutte le colonne\nse la tabella esiste ma non ha tutte le colonne, aggiunge le mancanti\nse la  tabella esiste ed ha tutte le colonne--> ok!",
+        "x": 170,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "084449e8c568cda0",
+        "type": "link in",
+        "z": "865f1ecc72bcc747",
+        "name": "link in 3",
+        "links": [
+            "1983271eb5ea0e81"
+        ],
+        "x": 405,
+        "y": 720,
+        "wires": [
+            [
+                "42061471e8d51f9e"
+            ]
+        ]
+    },
+    {
+        "id": "1983271eb5ea0e81",
+        "type": "link out",
+        "z": "865f1ecc72bcc747",
+        "name": "link out 2",
+        "mode": "link",
+        "links": [
+            "084449e8c568cda0"
+        ],
+        "x": 405,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "a2cc94408c786f46",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "SQL check ELEMENT OF TABLE exist with count",
+        "func": "//Parametri che variano a seconda della Richiesta\nconst tableName = 'items';\nconst fieldPrimaryKey = 'No';\nconst primaryKey = msg.payload.No; \n\nmsg.topic = `SELECT COUNT(*) AS TOT FROM ${tableName} AS i WHERE i.${fieldPrimaryKey} = '${primaryKey}'`;\n// Set the 'returnResult' property to true\n//msg.returnResult = true;\nmsg.bc365 = msg.payload;\nreturn msg;\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 840,
+        "wires": [
+            [
+                "4de614ac2f8a5b81"
+            ]
+        ]
+    },
+    {
+        "id": "4de614ac2f8a5b81",
+        "type": "mysql",
+        "z": "865f1ecc72bcc747",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 850,
+        "y": 880,
+        "wires": [
+            [
+                "faaeed6db2526a29"
+            ]
+        ]
+    },
+    {
+        "id": "70bee7dde1b03377",
+        "type": "mysql",
+        "z": "865f1ecc72bcc747",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 910,
+        "y": 980,
+        "wires": [
+            [
+                "b95fd3436ca625fd"
+            ]
+        ]
+    },
+    {
+        "id": "faaeed6db2526a29",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "SQL  INSERT/UPDATE RECORD",
+        "func": "try {\n    const exist = msg.payload[0].TOT > 0;\n    const tableName = 'items';\n    const data = msg.bc365;\n    const primaryKey = 'No';\n    const escapeString = (value) => {\n        if (typeof value === 'string') {\n            return \"'\" + value.replace(/'/g, \"''\") + \"'\";\n        } else {\n            return value;\n        }\n    };\n    let query = '';\n\n    if (exist) {\n        query = `UPDATE ${tableName} SET `;\n\n        for (const key in data) {\n            if (data.hasOwnProperty(key) && key !== primaryKey) {\n                let columnValue = data[key];\n                if (typeof columnValue === 'string') {\n                    columnValue = columnValue.replace(/'/g, \"''\");\n                    columnValue = `'${columnValue}'`;\n                } else if (columnValue instanceof Date) {\n                    const formattedDate = columnValue.toISOString().split('T')[0];\n                    columnValue = `'${formattedDate}'`;\n                }\n\n                query += `\\`${key}\\` = ${columnValue}, `;\n            }\n        }\n\n        query = query.slice(0, -2); // Remove the trailing comma and space\n        query += ` WHERE \\`${primaryKey}\\` = ${escapeString(data[primaryKey])}`;\n    } else {\n        let columns = '';\n        let values = '';\n\n        for (const key in data) {\n            if (data.hasOwnProperty(key)) {\n                let columnValue = data[key];\n                if (typeof columnValue === 'string') {\n                    columnValue = columnValue.replace(/'/g, \"''\");\n                    columnValue = `'${columnValue}'`;\n                } else if (columnValue instanceof Date) {\n                    const formattedDate = columnValue.toISOString().split('T')[0];\n                    columnValue = `'${formattedDate}'`;\n                }\n\n                columns += `\\`${key}\\`, `;\n                values += `${columnValue}, `;\n            }\n        }\n\n        columns = columns.slice(0, -2); // Remove the trailing comma and space\n        values = values.slice(0, -2); // Remove the trailing comma and space\n\n        query = `INSERT INTO ${tableName} (${columns}) VALUES (${values})`;\n    }\n\n    msg.topic = query;\n} catch (error) {\n    msg.payload = error;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 940,
+        "wires": [
+            [
+                "70bee7dde1b03377"
+            ]
+        ]
+    },
+    {
+        "id": "686c18e3a87bce34",
+        "type": "split",
+        "z": "865f1ecc72bcc747",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 670,
+        "y": 760,
+        "wires": [
+            [
+                "db755ed473923cd4"
+            ]
+        ]
+    },
+    {
+        "id": "db755ed473923cd4",
+        "type": "delay",
+        "z": "865f1ecc72bcc747",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 680,
+        "y": 800,
+        "wires": [
+            [
+                "a2cc94408c786f46"
+            ]
+        ]
+    },
+    {
+        "id": "42061471e8d51f9e",
+        "type": "function",
+        "z": "865f1ecc72bcc747",
+        "name": "Payload = response",
+        "func": "msg.payload = msg.response;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 720,
+        "wires": [
+            [
+                "686c18e3a87bce34"
+            ]
+        ]
+    },
+    {
+        "id": "b95fd3436ca625fd",
+        "type": "debug",
+        "z": "865f1ecc72bcc747",
+        "name": "debug 25",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "2df85975d3750878",
+        "type": "debug",
+        "z": "865f1ecc72bcc747",
+        "name": "debug 26",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 120,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "3b2ea60f8b6e9a06",
+        "type": "business-central-connection",
+        "z": "41142cae37ed8216",
+        "tenant": "",
+        "clientID": "",
+        "clientSecret": "",
+        "baseUrl": "https://api.businesscentral.dynamics.com/v2.0/",
+        "scope": "https://api.businesscentral.dynamics.com/.default",
+        "grantType": "client_credentials",
+        "code": "code",
+        "redirectUri": "redirect uri",
+        "servicesDropDown": "",
+        "servicesMethods": "",
+        "environment": "Production",
+        "company": "",
+        "append": "ServiziWeb",
+        "x": 270,
+        "y": 260,
+        "wires": [
+            [
+                "c2a92cf467c2cffc"
+            ]
+        ]
+    },
+    {
+        "id": "2eb93cc73593ebec",
+        "type": "inject",
+        "z": "41142cae37ed8216",
+        "name": "",
+        "props": [],
+        "repeat": "86400",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 110,
+        "y": 200,
+        "wires": [
+            [
+                "27775b2030b2fed0"
+            ]
+        ]
+    },
+    {
+        "id": "27775b2030b2fed0",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "Array JSON Filter Parametri Richiesta",
+        "func": "msg.payload = {\n    \"filter\": [\n        {\n            \"Field\": \"Posting_Date\",\n            \"Criteria\": \"2023-05-01\",\n        }\n    ],\n    \"setSize\": 5\n};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 200,
+        "wires": [
+            [
+                "3b2ea60f8b6e9a06"
+            ]
+        ]
+    },
+    {
+        "id": "7e05da6474174f60",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "Sync Node Movimenti_CG_excel Dynamic with BC365",
+        "info": "",
+        "x": 240,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "0b2db704ca3959e6",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "SQL check ELEMENT OF TABLE exist with count",
+        "func": "//Parametri che variano a seconda della Richiesta\nconst tableName = 'movimenti_c_g_excel';//items\nconst fieldPrimaryKey = 'Key';//per items sarà No\nconst primaryKey = msg.payload.Key; //per items sarà msg.payload.No\n\nmsg.topic = `SELECT COUNT(*) AS TOT FROM ${tableName} AS i WHERE i.${fieldPrimaryKey} = '${primaryKey}'`;\n// Set the 'returnResult' property to true\n//msg.returnResult = true;\nmsg.bc365 = msg.payload;\nreturn msg;\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 680,
+        "wires": [
+            [
+                "0ce2a6f5803e09e6"
+            ]
+        ]
+    },
+    {
+        "id": "0ce2a6f5803e09e6",
+        "type": "mysql",
+        "z": "41142cae37ed8216",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 790,
+        "y": 720,
+        "wires": [
+            [
+                "2022c2077b498bc8"
+            ]
+        ]
+    },
+    {
+        "id": "ec1faf4e0efddc30",
+        "type": "mysql",
+        "z": "41142cae37ed8216",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 970,
+        "y": 500,
+        "wires": [
+            [
+                "0fc9ef6323ebeef4"
+            ]
+        ]
+    },
+    {
+        "id": "c2a92cf467c2cffc",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "SQL check TABLE exist with count",
+        "func": "//Parametri che variano a seconda della Richiesta\nconst tableName = 'movimenti_c_g_excel';//items\n\nmsg.topic = `SELECT COUNT(*) AS TOT FROM information_schema.tables WHERE table_schema = 'schema_bc365' AND table_name = '${tableName}';`;\nmsg.bc365 = msg.payload;\nmsg.response = msg.payload;\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 300,
+        "wires": [
+            [
+                "e8d4a24698f60632"
+            ]
+        ]
+    },
+    {
+        "id": "e8d4a24698f60632",
+        "type": "mysql",
+        "z": "41142cae37ed8216",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 470,
+        "y": 340,
+        "wires": [
+            [
+                "c34649c812f35633"
+            ]
+        ]
+    },
+    {
+        "id": "cc1a6168e7ac9aae",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "CREATE TABLE",
+        "func": "const tableName = 'movimenti_c_g_excel'; // items\nconst primaryKey = 'Key'; // No\n\nconst dataArray = msg.bc365; // Assuming msg.bc365 contains the array of JSON objects\n\n// Extract all unique column names from all objects in the array\nconst columnsSet = new Set();\ndataArray.forEach(obj => {\n    const keys = Object.keys(obj);\n    keys.forEach(key => {\n        if (key !== primaryKey) {\n            columnsSet.add(key);\n        }\n    });\n});\n\nconst columns = Array.from(columnsSet); // Convert the Set to an array\n\nvar createTableQuery = `CREATE TABLE IF NOT EXISTS \\`${tableName}\\` (`;\ncreateTableQuery += `\\`${primaryKey}\\` VARCHAR(255) PRIMARY KEY,`; // Primary key column using \"Key\" column\n\n// Generate the CREATE TABLE query\nfor (var i = 0; i < columns.length; i++) {\n    createTableQuery += `\\`${columns[i]}\\` VARCHAR(255)`;\n\n    if (i !== columns.length - 1) {\n        createTableQuery += \",\";\n    }\n}\n\ncreateTableQuery += \") ENGINE=InnoDB\";\n\nmsg.topic = createTableQuery;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 460,
+        "wires": [
+            [
+                "ec1faf4e0efddc30"
+            ]
+        ]
+    },
+    {
+        "id": "c34649c812f35633",
+        "type": "switch",
+        "z": "41142cae37ed8216",
+        "name": "",
+        "property": "msg.payload[0].TOT",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "0",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 710,
+        "y": 360,
+        "wires": [
+            [
+                "94016ba70e3c890a"
+            ],
+            [
+                "cc1a6168e7ac9aae"
+            ]
+        ]
+    },
+    {
+        "id": "94016ba70e3c890a",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "Select Colonne Già esistenti",
+        "func": "//Parametri che variano a Seconda della Richiesta\nconst tableName = 'movimenti_c_g_excel';//items\n\nconst query = `\n    SELECT column_name\n    FROM information_schema.columns\n    WHERE table_name = '${tableName}'\n`;\nmsg.topic =query;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 260,
+        "wires": [
+            [
+                "3582b321c635fd00"
+            ]
+        ]
+    },
+    {
+        "id": "3582b321c635fd00",
+        "type": "mysql",
+        "z": "41142cae37ed8216",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 1050,
+        "y": 300,
+        "wires": [
+            [
+                "cc6c984abd7b84e3"
+            ]
+        ]
+    },
+    {
+        "id": "cc6c984abd7b84e3",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "ALTER TABLE",
+        "func": "//Parametri che variano a Seconda della Richiesta\nconst tableName = 'movimenti_c_g_excel';//items\n\nconst existingColumns = msg.payload;\nconst dataArray = msg.bc365; // Assuming msg.bc365 contains the array of JSON objects\n\nlet alterTableQuery = `ALTER TABLE ${tableName} `;\nlet columnList = '';\n\n// Iterate over each object in the data array\nfor (let j = 0; j < dataArray.length; j++) {\n    const data = dataArray[j];\n\n    // Iterate over the JSON object keys to extract column names\n    for (const key in data) {\n        if (data.hasOwnProperty(key)) {\n            let columnExists = false;\n            let columnToAdd = key;\n\n            // Check if the column already exists\n            for (let i = 0; i < existingColumns.length; i++) {\n                const column = existingColumns[i].COLUMN_NAME;\n                if (key === column) {\n                    columnExists = true;\n                    break;\n                }\n            }\n\n            // Check if the column is already in the columnList\n            if (!columnExists && !columnList.includes(columnToAdd)) {\n                columnList += `ADD COLUMN ${columnToAdd} VARCHAR(255), `;\n            }\n        }\n    }\n}\n\n// Check if there are missing columns\nif (columnList.length > 0) {\n    // Remove the trailing comma and space\n    columnList = columnList.slice(0, -2);\n    alterTableQuery += columnList;\n\n    msg.topic = alterTableQuery;\n} else {\n    // No missing columns, set alterTableQuery to an empty string\n    alterTableQuery = '';\n    msg.error = 'No columns to add.';\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1300,
+        "y": 320,
+        "wires": [
+            [
+                "dddf893df54a789d"
+            ]
+        ]
+    },
+    {
+        "id": "dddf893df54a789d",
+        "type": "mysql",
+        "z": "41142cae37ed8216",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 1330,
+        "y": 360,
+        "wires": [
+            [
+                "0fc9ef6323ebeef4"
+            ]
+        ]
+    },
+    {
+        "id": "42a99c169bf0685c",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "CREATE/ALTER TABLE",
+        "info": "se la tabella non esiste la crea con tutte le colonne\nse la tabella esiste ma non ha tutte le colonne, aggiunge le mancanti\nse la  tabella esiste ed ha tutte le colonne--> ok!",
+        "x": 150,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "c3321a2df38434aa",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "for Create table",
+        "info": "Crea una tabella con un colonna Key come chiave primaria",
+        "x": 920,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "2887d1c163f8680e",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "for Alter Table",
+        "info": "Controlla le colonne presenti sulla tabella,\nandando ad aggiungere quelle mancanti, qualora vi siano.",
+        "x": 890,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "fe00a2996e14b51e",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "Variabili a Seconda del WS selezionato",
+        "info": "config di BC365\nnome della tabella\nchiave primaria con cui fare controlli sulla tabella",
+        "x": 330,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "a92c66926248f559",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "Flow Description",
+        "info": "Config Nodo BC365\nsettare Array Json per Richiesta desiderata\naggiornare i valori nei nodi function '/////Pametri da settare a seconda della Richiesta'\nInject",
+        "x": 80,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "7ad0ca990dd1cca7",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "for BC365",
+        "info": "Configura i parametri relativi all'applicazione BC365 a cui vuoi connetterti\nseleziona il WS, il Metodo e l'action\nvisualizza il JSON dove verrà mostrato i parametri del metodo con cui potrei effettuare la richiesta.(Array JSON P.R.)",
+        "x": 200,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "c48dea4365675f3c",
+        "type": "comment",
+        "z": "41142cae37ed8216",
+        "name": "settato per Movimenti_c_g_excel read multiple",
+        "info": "",
+        "x": 170,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "cdbd9cad5121bb01",
+        "type": "link in",
+        "z": "41142cae37ed8216",
+        "name": "link in 2",
+        "links": [
+            "0fc9ef6323ebeef4"
+        ],
+        "x": 55,
+        "y": 600,
+        "wires": [
+            [
+                "699122e9908cf572"
+            ]
+        ]
+    },
+    {
+        "id": "0fc9ef6323ebeef4",
+        "type": "link out",
+        "z": "41142cae37ed8216",
+        "name": "link out 1",
+        "mode": "link",
+        "links": [
+            "cdbd9cad5121bb01",
+            "b91d6ec92012d909"
+        ],
+        "x": 1455,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "3641c90c0ee49058",
+        "type": "mysql",
+        "z": "41142cae37ed8216",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 1070,
+        "y": 800,
+        "wires": [
+            [
+                "1987e36b54862ee7"
+            ]
+        ]
+    },
+    {
+        "id": "2022c2077b498bc8",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "SQL  INSERT/UPDATE RECORD",
+        "func": "try {\n    const exist = msg.payload[0].TOT > 0;\n    const tableName = 'movimenti_c_g_excel';\n    const data = msg.bc365;\n    const primaryKey = 'Key';\n    const escapeString = (value) => {\n        if (typeof value === 'string') {\n            return \"'\" + value.replace(/'/g, \"''\") + \"'\";\n        } else {\n            return value;\n        }\n    };\n    let query = '';\n\n    if (exist) {\n        query = `UPDATE ${tableName} SET `;\n\n        for (const key in data) {\n            if (data.hasOwnProperty(key) && key !== primaryKey) {\n                let columnValue = data[key];\n                if (typeof columnValue === 'string') {\n                    columnValue = columnValue.replace(/'/g, \"''\");\n                    columnValue = `'${columnValue}'`;\n                } else if (columnValue instanceof Date) {\n                    const formattedDate = columnValue.toISOString().split('T')[0];\n                    columnValue = `'${formattedDate}'`;\n                }\n\n                query += `\\`${key}\\` = ${columnValue}, `;\n            }\n        }\n\n        query = query.slice(0, -2); // Remove the trailing comma and space\n        query += ` WHERE \\`${primaryKey}\\` = ${escapeString(data[primaryKey])}`;\n    } else {\n        let columns = '';\n        let values = '';\n\n        for (const key in data) {\n            if (data.hasOwnProperty(key)) {\n                let columnValue = data[key];\n                if (typeof columnValue === 'string') {\n                    columnValue = columnValue.replace(/'/g, \"''\");\n                    columnValue = `'${columnValue}'`;\n                } else if (columnValue instanceof Date) {\n                    const formattedDate = columnValue.toISOString().split('T')[0];\n                    columnValue = `'${formattedDate}'`;\n                }\n\n                columns += `\\`${key}\\`, `;\n                values += `${columnValue}, `;\n            }\n        }\n\n        columns = columns.slice(0, -2); // Remove the trailing comma and space\n        values = values.slice(0, -2); // Remove the trailing comma and space\n\n        query = `INSERT INTO ${tableName} (${columns}) VALUES (${values})`;\n    }\n\n    msg.topic = query;\n} catch (error) {\n    msg.payload = error;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 760,
+        "wires": [
+            [
+                "3641c90c0ee49058"
+            ]
+        ]
+    },
+    {
+        "id": "d615c415710b428f",
+        "type": "split",
+        "z": "41142cae37ed8216",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 390,
+        "y": 600,
+        "wires": [
+            [
+                "4bcef933bdf8c691"
+            ]
+        ]
+    },
+    {
+        "id": "4bcef933bdf8c691",
+        "type": "delay",
+        "z": "41142cae37ed8216",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 500,
+        "y": 640,
+        "wires": [
+            [
+                "0b2db704ca3959e6"
+            ]
+        ]
+    },
+    {
+        "id": "699122e9908cf572",
+        "type": "function",
+        "z": "41142cae37ed8216",
+        "name": "Payload = response",
+        "func": "msg.payload = msg.response;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 200,
+        "y": 600,
+        "wires": [
+            [
+                "d615c415710b428f"
+            ]
+        ]
+    },
+    {
+        "id": "1987e36b54862ee7",
+        "type": "debug",
+        "z": "41142cae37ed8216",
+        "name": "debug 22",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1100,
+        "y": 840,
+        "wires": []
+    }
+]
