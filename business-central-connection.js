@@ -25,7 +25,7 @@ module.exports = function (RED) {
         app.get('/wrapperoauth2', (req, res) => {
             getOauth2(config)
                 .then(async (response) => {
-                    const url =config.baseUrl+config.tenant+"/"+config.environment+"/ODataV4/Company(\'"+config.company+"}\')/"+config.append;
+                    const url =config.baseUrl+config.tenant+"/"+config.environment+"/ODataV4/Company(\'"+config.company+"\')/"+config.append;
                     if (!response?.data?.access_token) return res.json({ status: 401, reason: 'access token not exist' });
                     const responseSoap = await getRequestDynamic(url, response?.data?.access_token);
                     res.json(responseSoap.data);
