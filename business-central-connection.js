@@ -5,9 +5,13 @@ module.exports = function (RED) {
     const express = require('express');
     const cors = require('cors');
     const app = express();
-    const port = 3000;
+    const port = 20220;//3000
     const soap = require('soap');
   
+
+    ///istanza1.nodered.it:1880 > nodered -> server url istanza1.nodered.it:20220
+    ///istanza.nodered.it:20220 -> express app for wrapping request
+
     app.use(cors({
         origin: '*'
     }));
@@ -25,13 +29,13 @@ module.exports = function (RED) {
         app.get('/wrapperoauth2', (req, res) => {
             getOauth2(config)
                 .then(async (response) => {
-                    const url =config.baseUrl+config.tenant+"/"+config.environment+"/ODataV4/Company(\'"+config.company+"\')/"+config.append;
+                    const url = config.baseUrl+config.tenant+"/"+config.environment+"/ODataV4/Company(\'"+config.company+"\')/"+config.append;
                     if (!response?.data?.access_token) return res.json({ status: 401, reason: 'access token not exist' });
                     const responseSoap = await getRequestDynamic(url, response?.data?.access_token);
                     res.json(responseSoap.data);
                 })
                 .catch((e) => {
-                    console.log('error:::', e)
+                    console.log('error:::wrapperoauth2::', e)
                 });
         });
 
@@ -67,7 +71,7 @@ module.exports = function (RED) {
                     if (!response?.data?.access_token) return res.json({ status: 401, reason: 'access token not exist' });
                     try {
                         //get client and describe and format array, response to front-end 
-                        const client = await getClientSoap(response.data.access_token, url);
+                        const client = await getClientSoap(response.data.access_token, url,config);
                         var methodNameJustify = methodName.replace(/\. |\s/g, "_");
                         //regex for names which includes '.' or ' ' -> '_'
                         let soapURLName = url.includes('/Page/') ? methodNameJustify + '_Service' : methodNameJustify;
@@ -92,7 +96,7 @@ module.exports = function (RED) {
                     }
                 })
                 .catch((e) => {
-                    console.log('error:::', e)
+                    console.log('error:::methods', e)
                 });
         });
 
@@ -117,7 +121,7 @@ module.exports = function (RED) {
                 }); 
 
             } catch (error) {
-                console.log('error:::::::', error);
+                console.log('error:::::::on:input', error);
             }
         });
     }
@@ -128,7 +132,7 @@ module.exports = function (RED) {
      * @param {*} SOAPUrl 
      * @returns 
      */
-    async function getClientSoap(accessToken, SOAPUrl) {
+    async function getClientSoap(accessToken, SOAPUrl,config) {
         let client = null;
         try {
             const options = {
@@ -136,7 +140,7 @@ module.exports = function (RED) {
                     "Authorization": "Bearer " + accessToken
                 }
             }
-            const urlClient = 'http://127.0.0.1:3000/wsdlDynamic?SOAPUrl=' + SOAPUrl
+            const urlClient = config.server+'/wsdlDynamic?SOAPUrl=' + SOAPUrl
             client = await soap.createClientAsync(urlClient, options)
         } catch (error) {
             console.error('error::', error)
@@ -165,7 +169,7 @@ module.exports = function (RED) {
             var methodNameJustify = metName.replace(/\. |\s/g, "_");
             var paramNameJustify = paramName.replace(/\. |\s/g, "_");
 
-            const client = await getClientSoap(accessToken, urlMethod);
+            const client = await getClientSoap(accessToken, urlMethod,config);
             client.setSecurity(new soap.BearerSecurity(accessToken));
 
             if (!client) throw 'Errore nella Get Client';

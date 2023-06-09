@@ -11,12 +11,13 @@
             grantType: { value: "client_credentials", required: true},//cannot be empty
             code: { value: "", required: true}, //cannot be empty
             redirectUri: { value: "/oauth2/redirect_uri", required: true}, //cannot be empty
-            servicesDropDown: { value: "", required: true},//cannot be empty
+            servicesDropDown: { value: "http://127.0.0.1:3000", required: true},//cannot be empty
             servicesMethods:{value:""},//can be empty
             environment: { value: "", required: true},//cannot be empty
             company: { value: "", required: true},//cannot be empty
             append: { value: "", required: true},//cannot be empty
             accessToken:{value: ""},//can be empty
+            server: { value: "", required: true},
             xmlSkeletonMessage:{value:""}//can be empty
         },
         inputs:1,
@@ -28,6 +29,7 @@
         
         oneditprepare: () => {
                 // Use the Selector to obtain the desired element
+                var server =  $("#node-input-server").val();
                 var servicesDropDown = $("#node-input-servicesDropDown");
                 var servicesMethods = $("#node-input-servicesMethods");
                 var loadingIndicator = $("#node-loadingIndicator");
@@ -41,7 +43,7 @@
                 var isServicesMethodsInitialized = false; // Flag to track the inizialization of servicesMethods
 
                 $.ajax({
-                    url: 'http://127.0.0.1:3000/wrapperoauth2',
+                    url: server+'/wrapperoauth2',//da prendere nella configurazione
                     type: "get",
                     cors: true,
                     contentType: 'application/json',
@@ -86,7 +88,7 @@
                     console.log('SELECTEDVALUE::::::',selectedValue);
 
                     $.ajax({
-                        url: 'http://127.0.0.1:3000/methods?SOAPUrl=' + selectedValue +'&methodName='+methodName,
+                        url: server+'/methods?SOAPUrl=' + selectedValue +'&methodName='+methodName,
                         type: 'get',
                         dataType: 'json',
                         beforeSend: function () {
@@ -198,9 +200,13 @@
         <label for="node-input-company">company</label>
         <input type="text" id="node-input-company" placeholder="company">
     </div>
-      <div class="form-row">
+    <div class="form-row">
         <label for="node-input-append">append</label>
         <input type="text" id="node-input-append" placeholder="append">
+    </div>
+    <div class="form-row">
+        <label for="node-input-server">server</label>
+        <input type="text" id="node-input-server" placeholder="server">
     </div>
     <div id="node-loadingIndicator"  style="display: none;color:#ff0000; text:align-center" >Loading...</div>
     <div class="form-row">
