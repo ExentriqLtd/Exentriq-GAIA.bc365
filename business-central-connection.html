@@ -11,7 +11,7 @@
             grantType: { value: "client_credentials", required: true},//cannot be empty
             code: { value: "", required: true}, //cannot be empty
             redirectUri: { value: "/oauth2/redirect_uri", required: true}, //cannot be empty
-            servicesDropDown: { value: "http://127.0.0.1:3000", required: true},//cannot be empty
+            servicesDropDown: { value: "http://127.0.0.1:20220", required: true},//cannot be empty
             servicesMethods:{value:""},//can be empty
             environment: { value: "", required: true},//cannot be empty
             company: { value: "", required: true},//cannot be empty
@@ -29,7 +29,6 @@
         
         oneditprepare: () => {
                 // Use the Selector to obtain the desired element
-                var server =  $("#node-input-server").val();
                 var servicesDropDown = $("#node-input-servicesDropDown");
                 var servicesMethods = $("#node-input-servicesMethods");
                 var loadingIndicator = $("#node-loadingIndicator");
@@ -40,7 +39,10 @@
 
                 parametersElement.textContent = parametersValue;
             
+            
                 var isServicesMethodsInitialized = false; // Flag to track the inizialization of servicesMethods
+
+                var server =  $("#node-input-server").val();
 
                 $.ajax({
                     url: server+'/wrapperoauth2',//da prendere nella configurazione

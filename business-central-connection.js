@@ -5,12 +5,11 @@ module.exports = function (RED) {
     const express = require('express');
     const cors = require('cors');
     const app = express();
-    const port = 20220;//3000
+    const port = 20220;
     const soap = require('soap');
   
-
-    ///istanza1.nodered.it:1880 > nodered -> server url istanza1.nodered.it:20220
-    ///istanza.nodered.it:20220 -> express app for wrapping request
+    ///istanza1.nodered.it:1880 > nodered -> server url istanza1.nodered.it
+    ///:20220 -> express app for wrapping request
 
     app.use(cors({
         origin: '*'
@@ -29,7 +28,7 @@ module.exports = function (RED) {
         app.get('/wrapperoauth2', (req, res) => {
             getOauth2(config)
                 .then(async (response) => {
-                    const url = config.baseUrl+config.tenant+"/"+config.environment+"/ODataV4/Company(\'"+config.company+"\')/"+config.append;
+                    const url =config.baseUrl+config.tenant+"/"+config.environment+"/ODataV4/Company(\'"+config.company+"\')/"+config.append;
                     if (!response?.data?.access_token) return res.json({ status: 401, reason: 'access token not exist' });
                     const responseSoap = await getRequestDynamic(url, response?.data?.access_token);
                     res.json(responseSoap.data);
@@ -43,7 +42,6 @@ module.exports = function (RED) {
          *  Oatuh2 -> wsdl of xml
          */
         app.get('/wsdlDynamic', (req, res) => {
-
             getOauth2(config)
                 .then(async (response) => {
                     const url = req.query.SOAPUrl;
@@ -66,12 +64,13 @@ module.exports = function (RED) {
                 .then(async (response) => {
                     const url = req.query.SOAPUrl;
                     const methodName = req.query.methodName;
-
+                    const serverHost = config.server;
                     if (!url || !methodName) return console.warn('missed url / methodName')
                     if (!response?.data?.access_token) return res.json({ status: 401, reason: 'access token not exist' });
                     try {
                         //get client and describe and format array, response to front-end 
-                        const client = await getClientSoap(response.data.access_token, url,config);
+                        console.log('config:::methods::', config);
+                        const client = await getClientSoap(response.data.access_token, url,serverHost);
                         var methodNameJustify = methodName.replace(/\. |\s/g, "_");
                         //regex for names which includes '.' or ' ' -> '_'
                         let soapURLName = url.includes('/Page/') ? methodNameJustify + '_Service' : methodNameJustify;
@@ -130,9 +129,10 @@ module.exports = function (RED) {
      * get client soap
      * @param {*} accessToken 
      * @param {*} SOAPUrl 
+     * @param {*} serverHost
      * @returns 
      */
-    async function getClientSoap(accessToken, SOAPUrl,config) {
+    async function getClientSoap(accessToken, SOAPUrl,serverHost) {
         let client = null;
         try {
             const options = {
@@ -140,10 +140,13 @@ module.exports = function (RED) {
                     "Authorization": "Bearer " + accessToken
                 }
             }
-            const urlClient = config.server+'/wsdlDynamic?SOAPUrl=' + SOAPUrl
+            const urlClient = serverHost+'/wsdlDynamic?SOAPUrl=' + SOAPUrl;
+            console.log('server:::', serverHost)
+            console.log('urlClient:::', urlClient)
+
             client = await soap.createClientAsync(urlClient, options)
         } catch (error) {
-            console.error('error::', error)
+            console.error('error::WSDL::', error)
         }
 
         return client;
@@ -168,16 +171,19 @@ module.exports = function (RED) {
             const metName = config.servicesDropDown.split(';')[0];
             var methodNameJustify = metName.replace(/\. |\s/g, "_");
             var paramNameJustify = paramName.replace(/\. |\s/g, "_");
-
-            const client = await getClientSoap(accessToken, urlMethod,config);
+            var serverHost = config.server;
+            console.log('config:::executesoap::', config);
+            const client = await getClientSoap(accessToken, urlMethod,serverHost);
             client.setSecurity(new soap.BearerSecurity(accessToken));
 
             if (!client) throw 'Errore nella Get Client';
-            console.log('client:::', client);
+            //console.log('client:::', client);
             console.log('methodName_client:::', paramNameJustify);
 
             if (!client[paramNameJustify]) throw 'methods name not found';
 
+            console.log('describe::', client.describe());
+            console.log('args::', args)
             client[paramNameJustify](args, function (err, result) {
                 if (err) {
                     console.error('ERRORCLIENT:::::', err);

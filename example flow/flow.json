@@ -16,6 +16,81 @@
         "env": []
     },
     {
+        "id": "213b9301b2a5c017",
+        "type": "tab",
+        "label": "Flow 3",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "c8b0c199d0080db9",
+        "type": "tab",
+        "label": "Flow Sync Scheda_fornitore_Excel",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "936795eaee5338bf",
+        "type": "subflow",
+        "name": "Check/Create/Alter Table SQL",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 50,
+                "y": 30,
+                "wires": [
+                    {
+                        "id": "2a5e800a61abcff5"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 820,
+                "y": 400,
+                "wires": [
+                    {
+                        "id": "5f5bae74803024df",
+                        "port": 0
+                    },
+                    {
+                        "id": "e3fed1c173d51c21",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "6652fca6649dbcd9",
+        "type": "subflow",
+        "name": "INSERT/UPDATE DATA",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 20,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "322413f2653a37cd"
+                    }
+                ]
+            }
+        ],
+        "out": [],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
         "id": "b524a609e49d509e",
         "type": "MySQLdatabase",
         "name": "",
@@ -34,6 +109,371 @@
         "db": "schema_bc365",
         "tz": "",
         "charset": "UTF8"
+    },
+    {
+        "id": "e3fed1c173d51c21",
+        "type": "mysql",
+        "z": "936795eaee5338bf",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 530,
+        "y": 400,
+        "wires": [
+            [
+                "180c1206f105ea5b"
+            ]
+        ]
+    },
+    {
+        "id": "2a5e800a61abcff5",
+        "type": "function",
+        "z": "936795eaee5338bf",
+        "name": "SQL check TABLE exist with count",
+        "func": "//Parametri che variano a seconda della Richiesta\nconst tableName = msg.parameters.tableName;\n\nmsg.topic = `SELECT COUNT(*) AS TOT FROM information_schema.tables WHERE table_schema = 'schema_bc365' AND table_name = '${tableName}';`;\nmsg.bc365 = msg.payload;\nmsg.response = msg.payload;\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 200,
+        "y": 100,
+        "wires": [
+            [
+                "d1252cdc386f3c7a"
+            ]
+        ]
+    },
+    {
+        "id": "d1252cdc386f3c7a",
+        "type": "mysql",
+        "z": "936795eaee5338bf",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 170,
+        "y": 140,
+        "wires": [
+            [
+                "fdb5865ccee02b76"
+            ]
+        ]
+    },
+    {
+        "id": "89bad87e4920137e",
+        "type": "function",
+        "z": "936795eaee5338bf",
+        "name": "CREATE TABLE",
+        "func": "const tableName = msg.parameters.tableName;\nconst primaryKey = msg.parameters.primaryKey;\n\nconst dataArray = msg.bc365; // Assuming msg.bc365 contains the array of JSON objects\n\n// Extract all unique column names from all objects in the array\nconst columnsSet = new Set();\ndataArray.forEach(obj => {\n    const keys = Object.keys(obj);\n    keys.forEach(key => {\n        if (key !== primaryKey) {\n            columnsSet.add(key);\n        }\n    });\n});\n\nconst columns = Array.from(columnsSet); // Convert the Set to an array\n\nvar createTableQuery = `CREATE TABLE IF NOT EXISTS \\`${tableName}\\` (`;\ncreateTableQuery += `\\`${primaryKey}\\` VARCHAR(255) PRIMARY KEY,`; // Primary key column using \"Key\" column\n\n// Generate the CREATE TABLE query\nfor (var i = 0; i < columns.length; i++) {\n    createTableQuery += `\\`${columns[i]}\\` TEXT`;\n\n    if (i !== columns.length - 1) {\n        createTableQuery += \",\";\n    }\n}\n\ncreateTableQuery += \") ENGINE=InnoDB\";\n\nmsg.topic = createTableQuery;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 360,
+        "wires": [
+            [
+                "e3fed1c173d51c21"
+            ]
+        ]
+    },
+    {
+        "id": "fdb5865ccee02b76",
+        "type": "switch",
+        "z": "936795eaee5338bf",
+        "name": "",
+        "property": "msg.payload[0].TOT",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "0",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 270,
+        "y": 280,
+        "wires": [
+            [
+                "7488ca0a9806be83"
+            ],
+            [
+                "89bad87e4920137e"
+            ]
+        ]
+    },
+    {
+        "id": "7488ca0a9806be83",
+        "type": "function",
+        "z": "936795eaee5338bf",
+        "name": "Select Colonne Già esistenti",
+        "func": "//Parametri che variano a Seconda della Richiesta\nconst tableName = msg.parameters.tableName;\n\nconst query = `\n    SELECT column_name\n    FROM information_schema.columns\n    WHERE table_name = '${tableName}'\n`;\nmsg.topic =query;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 160,
+        "wires": [
+            [
+                "8fd8de86a923051f"
+            ]
+        ]
+    },
+    {
+        "id": "8fd8de86a923051f",
+        "type": "mysql",
+        "z": "936795eaee5338bf",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 530,
+        "y": 200,
+        "wires": [
+            [
+                "deebeb2820957ebf"
+            ]
+        ]
+    },
+    {
+        "id": "deebeb2820957ebf",
+        "type": "function",
+        "z": "936795eaee5338bf",
+        "name": "ALTER TABLE",
+        "func": "//Parametri che variano a Seconda della Richiesta\nconst tableName = msg.parameters.tableName;//items\n\nconst existingColumns = msg.payload;\nconst dataArray = msg.bc365; // Assuming msg.bc365 contains the array of JSON objects\n\nlet alterTableQuery = `ALTER TABLE ${tableName} `;\nlet columnList = '';\n\n// Iterate over each object in the data array\nfor (let j = 0; j < dataArray.length; j++) {\n    const data = dataArray[j];\n\n    // Iterate over the JSON object keys to extract column names\n    for (const key in data) {\n        if (data.hasOwnProperty(key)) {\n            let columnExists = false;\n            let columnToAdd = key;\n\n            // Check if the column already exists\n            for (let i = 0; i < existingColumns.length; i++) {\n                const column = existingColumns[i].COLUMN_NAME;\n                if (key === column) {\n                    columnExists = true;\n                    break;\n                }\n            }\n\n            // Check if the column is already in the columnList\n            if (!columnExists && !columnList.includes(columnToAdd)) {\n                columnList += `ADD COLUMN ${columnToAdd} VARCHAR(255), `;\n            }\n        }\n    }\n}\n\n// Check if there are missing columns\nif (columnList.length > 0) {\n    // Remove the trailing comma and space\n    columnList = columnList.slice(0, -2);\n    alterTableQuery += columnList;\n\n    msg.topic = alterTableQuery;\n} else {\n    // No missing columns, set alterTableQuery to an empty string\n    alterTableQuery = '';\n    msg.error = 'No columns to add.';\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 200,
+        "wires": [
+            [
+                "5f5bae74803024df"
+            ]
+        ]
+    },
+    {
+        "id": "5f5bae74803024df",
+        "type": "mysql",
+        "z": "936795eaee5338bf",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 810,
+        "y": 240,
+        "wires": [
+            [
+                "32a2dc487e77a11a"
+            ]
+        ]
+    },
+    {
+        "id": "e30eb53faed6cfda",
+        "type": "comment",
+        "z": "936795eaee5338bf",
+        "name": "for Create table",
+        "info": "Crea una tabella con un colonna Key come chiave primaria",
+        "x": 440,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "1aa5a1734bafd27a",
+        "type": "comment",
+        "z": "936795eaee5338bf",
+        "name": "for Alter Table",
+        "info": "Controlla le colonne presenti sulla tabella,\nandando ad aggiungere quelle mancanti, qualora vi siano.",
+        "x": 810,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "180c1206f105ea5b",
+        "type": "debug",
+        "z": "936795eaee5338bf",
+        "name": "debug 29",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 795.765625,
+        "y": 444.75,
+        "wires": []
+    },
+    {
+        "id": "32a2dc487e77a11a",
+        "type": "debug",
+        "z": "936795eaee5338bf",
+        "name": "debug 30",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "d2f03061b045168d",
+        "type": "function",
+        "z": "6652fca6649dbcd9",
+        "name": "SQL check ELEMENT OF TABLE exist with count",
+        "func": "//Parametri che variano a seconda della Richiesta\nconst tableName = msg.parameters.tableName;\nconst fieldPrimaryKey = msg.parameters.primaryKey;\nconst primaryKey = msg.payload[fieldPrimaryKey]; \n\nmsg.topic = `SELECT COUNT(*) AS TOT FROM ${tableName} AS i WHERE i.${fieldPrimaryKey} = '${primaryKey}'`;\n// Set the 'returnResult' property to true\n//msg.returnResult = true;\nmsg.bc365 = msg.payload;\nreturn msg;\n\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 200,
+        "wires": [
+            [
+                "af40c8d81ce80ce4"
+            ]
+        ]
+    },
+    {
+        "id": "af40c8d81ce80ce4",
+        "type": "mysql",
+        "z": "6652fca6649dbcd9",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 470,
+        "y": 240,
+        "wires": [
+            [
+                "7908e5460454d594"
+            ]
+        ]
+    },
+    {
+        "id": "bb55709f176ac1fb",
+        "type": "mysql",
+        "z": "6652fca6649dbcd9",
+        "mydb": "2789cb1265da0191",
+        "name": "Execute prev query ",
+        "x": 530,
+        "y": 340,
+        "wires": [
+            [
+                "0bc181429eced647"
+            ]
+        ]
+    },
+    {
+        "id": "7908e5460454d594",
+        "type": "function",
+        "z": "6652fca6649dbcd9",
+        "name": "SQL  INSERT/UPDATE RECORD",
+        "func": "try {\n    const exist = msg.payload[0].TOT > 0;\n    const tableName = msg.parameters.tableName;\n    const data = msg.bc365;\n    const primaryKey = msg.parameters.primaryKey;\n    const escapeString = (value) => {\n        if (typeof value === 'string') {\n            return \"'\" + value.replace(/'/g, \"''\") + \"'\";\n        } else {\n            return value;\n        }\n    };\n    let query = '';\n\n    if (exist) {\n        query = `UPDATE ${tableName} SET `;\n\n        for (const key in data) {\n            if (data.hasOwnProperty(key) && key !== primaryKey) {\n                let columnValue = data[key];\n                if (typeof columnValue === 'string') {\n                    columnValue = columnValue.replace(/'/g, \"''\");\n                    columnValue = `'${columnValue}'`;\n                } else if (columnValue instanceof Date) {\n                    const formattedDate = columnValue.toISOString().split('T')[0];\n                    columnValue = `'${formattedDate}'`;\n                }\n\n                query += `\\`${key}\\` = ${columnValue}, `;\n            }\n        }\n\n        query = query.slice(0, -2); // Remove the trailing comma and space\n        query += ` WHERE \\`${primaryKey}\\` = ${escapeString(data[primaryKey])}`;\n    } else {\n        let columns = '';\n        let values = '';\n\n        for (const key in data) {\n            if (data.hasOwnProperty(key)) {\n                let columnValue = data[key];\n                if (typeof columnValue === 'string') {\n                    columnValue = columnValue.replace(/'/g, \"''\");\n                    columnValue = `'${columnValue}'`;\n                } else if (columnValue instanceof Date) {\n                    const formattedDate = columnValue.toISOString().split('T')[0];\n                    columnValue = `'${formattedDate}'`;\n                }\n\n                columns += `\\`${key}\\`, `;\n                values += `${columnValue}, `;\n            }\n        }\n\n        columns = columns.slice(0, -2); // Remove the trailing comma and space\n        values = values.slice(0, -2); // Remove the trailing comma and space\n\n        query = `INSERT INTO ${tableName} (${columns}) VALUES (${values})`;\n    }\n\n    msg.topic = query;\n} catch (error) {\n    msg.payload = error;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 300,
+        "wires": [
+            [
+                "bb55709f176ac1fb"
+            ]
+        ]
+    },
+    {
+        "id": "fd22a667f5da0282",
+        "type": "split",
+        "z": "6652fca6649dbcd9",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 290,
+        "y": 120,
+        "wires": [
+            [
+                "1d4b32d5650adc01"
+            ]
+        ]
+    },
+    {
+        "id": "1d4b32d5650adc01",
+        "type": "delay",
+        "z": "6652fca6649dbcd9",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 300,
+        "y": 160,
+        "wires": [
+            [
+                "d2f03061b045168d"
+            ]
+        ]
+    },
+    {
+        "id": "322413f2653a37cd",
+        "type": "function",
+        "z": "6652fca6649dbcd9",
+        "name": "Payload = response",
+        "func": "msg.payload = msg.response;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 190,
+        "y": 80,
+        "wires": [
+            [
+                "fd22a667f5da0282"
+            ]
+        ]
+    },
+    {
+        "id": "0bc181429eced647",
+        "type": "debug",
+        "z": "6652fca6649dbcd9",
+        "name": "debug 28",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 520,
+        "y": 400,
+        "wires": []
     },
     {
         "id": "86347ed3bc407bd4",
@@ -62,10 +502,11 @@
         "code": "code",
         "redirectUri": "redirect uri",
         "servicesDropDown": "",
-        "servicesMethods": "",
-        "environment": "Production",
+        "servicesMethods": "ReadMultiple;{\"filter[]\":{\"Field\":\"items_Fields|xsd:string|No,Description,Type,InventoryField,Created_From_Nonstock_Item,FSE_InventoryValueZero,Substitutes_Exist,Stockkeeping_Unit_Exists,Assembly_BOM,Production_BOM_No,Routing_No,Base_Unit_of_Measure,Shelf_No,Costing_Method,Cost_is_Adjusted,Standard_Cost,Unit_Cost,Last_Direct_Cost,Price_Profit_Calculation,Profit_Percent,Unit_Price,Inventory_Posting_Group,Gen_Prod_Posting_Group,VAT_Prod_Posting_Group,Item_Disc_Group,Vendor_No,Vendor_Item_No,Tariff_No,Search_Description,Overhead_Rate,Indirect_Cost_Percent,Item_Category_Code,Blocked,Last_Date_Modified,Sales_Unit_of_Measure,Replenishment_System,Purch_Unit_of_Measure,Lead_Time_Calculation,Manufacturing_Policy,Flushing_Method,Assembly_Policy,Item_Tracking_Code,Default_Deferral_Template_Code,Coupled_to_CRM\",\"Criteria\":\"xsd:string\",\"targetNSAlias\":\"tns\",\"targetNamespace\":\"urn:microsoft-dynamics-schemas/page/items\"},\"bookmarkKey\":\"xsd:string\",\"setSize\":\"xsd:int\"}",
+        "environment": "",
         "company": "",
-        "append": "ServiziWeb",
+        "append": "",
+        "server": "",
         "x": 290,
         "y": 200,
         "wires": [
@@ -281,7 +722,7 @@
         "name": "for Alter Table",
         "info": "Controlla le colonne presenti sulla tabella,\nandando ad aggiungere quelle mancanti, qualora vi siano.",
         "x": 770,
-        "y": 240,
+        "y": 460,
         "wires": []
     },
     {
@@ -330,7 +771,8 @@
         "z": "865f1ecc72bcc747",
         "name": "link in 3",
         "links": [
-            "1983271eb5ea0e81"
+            "1983271eb5ea0e81",
+            "3f8f8dd36e21a3e7"
         ],
         "x": 405,
         "y": 720,
@@ -347,7 +789,8 @@
         "name": "link out 2",
         "mode": "link",
         "links": [
-            "084449e8c568cda0"
+            "084449e8c568cda0",
+            "abf78f9a92c52829"
         ],
         "x": 405,
         "y": 640,
@@ -529,10 +972,11 @@
         "code": "code",
         "redirectUri": "redirect uri",
         "servicesDropDown": "",
-        "servicesMethods": "",
-        "environment": "Production",
+        "servicesMethods": "ReadMultiple;{\"filter[]\":{\"Field\":\"Movimenti_C_G_Excel_Fields|xsd:string|Posting_Date,Document_Type,Document_No,Document_Date,G_L_Account_No,G_L_Account_Name,Description,FSE_Letter,Job_No,Global_Dimension_1_Code,Global_Dimension_2_Code,IC_Partner_Code,Gen_Posting_Type,Gen_Bus_Posting_Group,Gen_Prod_Posting_Group,VAT_Bus_Posting_Group,VAT_Prod_Posting_Group,Quantity,Amount,Debit_Amount,Credit_Amount,Additional_Currency_Amount,VAT_Amount,Bal_Account_Type,Bal_Account_No,VAT_Reporting_Date,User_ID,Source_Code,Source_Type,Source_No,Reason_Code,Reversed,Reversed_by_Entry_No,Reversed_Entry_No,FA_Entry_Type,FA_Entry_No,EAM_CurrencyCode,EAM_AmountOCY,EAM_SUBCCurrencyCode,EAM_AmountSUBCCurrencyCode,EAM_Competence,EAM_CompetenceStartingDate,EAM_CompetenceEndingDate,FSE_BusinessUnitCode,FSE_NoSeries,Entry_No,Dimension_Set_ID,External_Document_No,Shortcut_Dimension_3_Code,Shortcut_Dimension_4_Code,Shortcut_Dimension_5_Code,Shortcut_Dimension_6_Code,Shortcut_Dimension_7_Code,Shortcut_Dimension_8_Code\",\"Criteria\":\"xsd:string\",\"targetNSAlias\":\"tns\",\"targetNamespace\":\"urn:microsoft-dynamics-schemas/page/movimenti_c_g_excel\"},\"bookmarkKey\":\"xsd:string\",\"setSize\":\"xsd:int\"}",
+        "environment": "",
         "company": "",
-        "append": "ServiziWeb",
+        "append": "",
+        "server": "",
         "x": 270,
         "y": 260,
         "wires": [
@@ -863,7 +1307,8 @@
         "z": "41142cae37ed8216",
         "name": "link in 2",
         "links": [
-            "0fc9ef6323ebeef4"
+            "0fc9ef6323ebeef4",
+            "9a3d2f3f3da6c18c"
         ],
         "x": 55,
         "y": 600,
@@ -999,5 +1444,263 @@
         "x": 1100,
         "y": 840,
         "wires": []
+    },
+    {
+        "id": "079fb13b5b125489",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "Variabili a Seconda del WS selezionato",
+        "info": "config di BC365\nnome della tabella\nchiave primaria con cui fare controlli sulla tabella",
+        "x": 350,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "ca98249f0a40861e",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "Flow Description",
+        "info": "Config Nodo BC365\nsettare Array Json per Richiesta desiderata\naggiornare i valori nei nodi function '/////Pametri da settare a seconda della Richiesta'\nInject",
+        "x": 100,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "d7f00b96e7ce61b4",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "settato per Scheda_fornitore_Excel",
+        "info": "",
+        "x": 140,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "f03a15277e94bfc5",
+        "type": "business-central-connection",
+        "z": "c8b0c199d0080db9",
+        "tenant": "",
+        "clientID": "",
+        "clientSecret": "",
+        "baseUrl": "https://api.businesscentral.dynamics.com/v2.0/",
+        "scope": "https://api.businesscentral.dynamics.com/.default",
+        "grantType": "client_credentials",
+        "code": "code",
+        "redirectUri": "redirect uri",
+        "servicesDropDown": "",
+        "servicesMethods": "ReadMultiple;{\"filter[]\":{\"Field\":\"Scheda_fornitore_Excel_Fields|xsd:string|No,Name,FSE_Name_2,Blocked,Privacy_Blocked,Last_Date_Modified,Fiscal_Code,Special_Category,Balance_LCY,BalanceAsCustomer,Balance_Due_LCY,Document_Sending_Profile,Search_Name,IC_Partner_Code,Purchaser_Code,Responsibility_Center,EAM_BalanceEXAC,EAM_BalanceEXACLCY,EAM_NetChangeEXAC,EAM_NetChangeEXACLCY,EAM_DebitAmountEXAC,EAM_DebitAmountEXACLCY,EAM_CreditAmountEXAC,EAM_CreditAmountEXACLCY,FSE_CustomerNo,FSE_CustomerBalance,FSE_CustomerBalanceLCY,FSE_AutomaticExtTexts,Disable_Search_by_Name,Address,Address_2,Country_Region_Code,City,County,Post_Code,ShowMap,Phone_No,MobilePhoneNo,E_Mail,Fax_No,Home_Page,Our_Account_No,Apply_Company_Payment_days,Language_Code,Primary_Contact_No,Control16,FSE_NoofArchivedVersions,VAT_Registration_No,EORI_Number,GLN,Tax_Liable,Tax_Area_Code,Pay_to_Vendor_No,Invoice_Disc_Code,Prices_Including_VAT,Price_Calculation_Method,Registration_Number,Gen_Bus_Posting_Group,VAT_Bus_Posting_Group,Vendor_Posting_Group,Allow_Multiple_Posting_Groups,Currency_Code,Tax_Representative_Type,Tax_Representative_No,Resident,Residence_Address,Residence_Post_Code,Residence_City,First_Name,Last_Name,Residence_County,Date_of_Birth,Birth_Post_Code,Birth_City,Birth_County,Gender,Individual_Person,Withholding_Tax_Code,Social_Security_Code,Soc_Sec_Company_Base,Soc_Sec_3_Parties_Base,Country_of_Fiscal_Domicile,Contribution_Fiscal_Code,INAIL_Code,INAIL_Company_Base,INAIL_3_Parties_Base,Prepayment_Percent,Application_Method,Payment_Terms_Code,Prepmt_Payment_Terms_Code,Payment_Method_Code,Priority,Block_Payment_Tolerance,Int_on_Arrears_Code,Preferred_Bank_Account_Code,Partner_Type,Intrastat_Partner_Type,Cash_Flow_Payment_Terms_Code,Creditor_No,Location_Code,Shipment_Method_Code,Lead_Time_Calculation,Base_Calendar_Code,Customized_Calendar,Over_Receipt_Code,Subcontractor,Subcontracting_Location_Code,Subcontractor_Procurement,Linked_to_Work_Center\",\"Criteria\":\"xsd:string\",\"targetNSAlias\":\"tns\",\"targetNamespace\":\"urn:microsoft-dynamics-schemas/page/scheda_fornitore_excel\"},\"bookmarkKey\":\"xsd:string\",\"setSize\":\"xsd:int\"}",
+        "environment": "",
+        "company": "",
+        "append": "",
+        "server": "",
+        "x": 550,
+        "y": 220,
+        "wires": [
+            [
+                "b16704e04172d541"
+            ]
+        ]
+    },
+    {
+        "id": "6217035b1074fb23",
+        "type": "inject",
+        "z": "c8b0c199d0080db9",
+        "name": "",
+        "props": [],
+        "repeat": "86400",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 90,
+        "y": 220,
+        "wires": [
+            [
+                "883d400c07eb3762"
+            ]
+        ]
+    },
+    {
+        "id": "883d400c07eb3762",
+        "type": "function",
+        "z": "c8b0c199d0080db9",
+        "name": "Array JSON Filter Parametri Richiesta",
+        "func": "msg.payload = {\n    \"filter\": [\n        {\n            \"Field\": \"No\",\n            \"Criteria\": \"F00004\",\n        }\n    ]\n    };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 220,
+        "wires": [
+            [
+                "f03a15277e94bfc5"
+            ]
+        ]
+    },
+    {
+        "id": "3a38d9cc5de34889",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "for BC365",
+        "info": "Configura i parametri relativi all'applicazione BC365 a cui vuoi connetterti\nseleziona il WS, il Metodo e l'action\nvisualizza il JSON dove verrà mostrato i parametri del metodo con cui potrei effettuare la richiesta.(Array JSON P.R.)",
+        "x": 560,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "6786a6f36450ff20",
+        "type": "subflow:936795eaee5338bf",
+        "z": "c8b0c199d0080db9",
+        "name": "",
+        "x": 950,
+        "y": 340,
+        "wires": [
+            [
+                "3b465481020da2f6"
+            ]
+        ]
+    },
+    {
+        "id": "3b465481020da2f6",
+        "type": "subflow:6652fca6649dbcd9",
+        "z": "c8b0c199d0080db9",
+        "name": "",
+        "x": 1230,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "b16704e04172d541",
+        "type": "function",
+        "z": "c8b0c199d0080db9",
+        "name": "function 2",
+        "func": "msg.parameters={\n    tableName:'Scheda_fornitore_excel',\n    primaryKey:'No'\n};\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 220,
+        "wires": [
+            [
+                "6786a6f36450ff20"
+            ]
+        ]
+    },
+    {
+        "id": "0ffe32156f38c4fc",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "Variabili a Seconda del WS selezionato",
+        "info": "config di BC365\nnome della tabella\nchiave primaria con cui fare controlli sulla tabella",
+        "x": 330,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "b829be597607b885",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "Flow Description",
+        "info": "Config Nodo BC365\nsettare Array Json per Richiesta desiderata\naggiornare i valori nei nodi function '/////Pametri da settare a seconda della Richiesta'\nInject",
+        "x": 80,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "511c85d62e43fd81",
+        "type": "comment",
+        "z": "c8b0c199d0080db9",
+        "name": "settato per Clienti",
+        "info": "",
+        "x": 80,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "def386e70ca6e672",
+        "type": "business-central-connection",
+        "z": "c8b0c199d0080db9",
+        "tenant": "",
+        "clientID": "",
+        "clientSecret": "",
+        "baseUrl": "https://api.businesscentral.dynamics.com/v2.0/",
+        "scope": "https://api.businesscentral.dynamics.com/.default",
+        "grantType": "client_credentials",
+        "code": "code",
+        "redirectUri": "redirect uri",
+        "servicesDropDown": "Clienti;",
+        "servicesMethods": "ReadMultiple;{\"filter[]\":{\"Field\":\"Clienti_Fields|xsd:string|No,Name,FSE_Recipient_Code_Exists,Name_2,Responsibility_Center,Location_Code,Post_Code,Country_Region_Code,Phone_No,IC_Partner_Code,Contact,Salesperson_Code,Customer_Posting_Group,Allow_Multiple_Posting_Groups,Gen_Bus_Posting_Group,VAT_Bus_Posting_Group,Customer_Price_Group,Customer_Disc_Group,Payment_Terms_Code,Reminder_Terms_Code,Fin_Charge_Terms_Code,Currency_Code,Language_Code,Search_Name,Credit_Limit_LCY,Blocked,Privacy_Blocked,Last_Date_Modified,Application_Method,Combine_Shipments,FSE_InvperShipToCode,FSE_InvperLocationCode,FSE_Invoice_Sell_to,FSE_NogroupperSalespersonCode,Reserve,Ship_to_Code,Shipping_Advice,Shipping_Agent_Code,Base_Calendar_Code,Balance_LCY,Balance_Due_LCY,Sales_LCY,Payments_LCY,Coupled_to_CRM\",\"Criteria\":\"xsd:string\",\"targetNSAlias\":\"tns\",\"targetNamespace\":\"urn:microsoft-dynamics-schemas/page/clienti\"},\"bookmarkKey\":\"xsd:string\",\"setSize\":\"xsd:int\"}",
+        "environment": "",
+        "company": "",
+        "append": "",
+        "server": "",
+        "x": 550,
+        "y": 440,
+        "wires": [
+            [
+                "1b08cfb6325cb321"
+            ]
+        ]
+    },
+    {
+        "id": "08ca56465ff92a7a",
+        "type": "inject",
+        "z": "c8b0c199d0080db9",
+        "name": "",
+        "props": [],
+        "repeat": "86400",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 70,
+        "y": 440,
+        "wires": [
+            [
+                "e5a121b748e2b420"
+            ]
+        ]
+    },
+    {
+        "id": "e5a121b748e2b420",
+        "type": "function",
+        "z": "c8b0c199d0080db9",
+        "name": "Array JSON Filter Parametri Richiesta",
+        "func": "msg.payload = {\n    \"filter\": [\n        {\n            \"Field\": \"No\",\n            \"Criteria\": \"C00034\",\n        }\n    ]\n};\n    /*msg.payload = {\n        \"filter\": [\n            {\n                \"Field\": \"Last_Date_Modified\",\n                \"Criteria\": \"> 2022-04-01\",\n            }\n        ],\n        \"setSize\": 5\n    };*/\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 440,
+        "wires": [
+            [
+                "def386e70ca6e672"
+            ]
+        ]
+    },
+    {
+        "id": "1b08cfb6325cb321",
+        "type": "function",
+        "z": "c8b0c199d0080db9",
+        "name": "function 3",
+        "func": "msg.parameters={\n    tableName:'Clienti',\n    primaryKey:'No'\n};\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 440,
+        "wires": [
+            [
+                "6786a6f36450ff20"
+            ]
+        ]
     }
 ]
