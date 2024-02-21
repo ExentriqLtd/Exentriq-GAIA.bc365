@@ -1,6 +1,8 @@
 # Exentriq-GAIA.bc365
 ## Installation
 
+to make sure that service https://github.com/ExentriqLtd/Exentriq-GAIA.bc365/tree/v2-bc365 is on.
+
 ```bash
 npm install node-red-contrib-business-central-connection@https://github.com/ExentriqLtd/Exentriq-GAIA.bc365
 ```
