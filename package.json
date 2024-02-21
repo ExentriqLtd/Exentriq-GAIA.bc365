@@ -15,6 +15,6 @@
     "form-data": "^4.0.0",
     "soap": "^1.0.0"
   },
-  "author": "Vincenzo Testa",
+  "author": "Fabrizio Corpora",
   "license": " Apache-2.0"
 }

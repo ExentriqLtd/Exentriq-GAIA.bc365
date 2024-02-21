@@ -1,233 +1,303 @@
-<script type="text/javascript">
-    RED.nodes.registerType('business-central-connection',{
-        category: 'BC365',
-        color: '#a6bbcf',
-        defaults: {
-            tenant:  { value: "", required: true},//cannot be empty
-            clientID: { value: "", required: true},//cannot be empty
-            clientSecret: { value: "", required: true},//cannot be empty
-            baseUrl: {value: "https://api.businesscentral.dynamics.com/v2.0/",required: true},
-            scope: { value: "https://api.businesscentral.dynamics.com/.default", required: true},//cannot be empty
-            grantType: { value: "client_credentials", required: true},//cannot be empty
-            code: { value: "", required: true}, //cannot be empty
-            redirectUri: { value: "/oauth2/redirect_uri", required: true}, //cannot be empty
-            servicesDropDown: { value: "http://127.0.0.1:20220", required: true},//cannot be empty
-            servicesMethods:{value:""},//can be empty
-            environment: { value: "", required: true},//cannot be empty
-            company: { value: "", required: true},//cannot be empty
-            append: { value: "", required: true},//cannot be empty
-            accessToken:{value: ""},//can be empty
-            server: { value: "", required: true},
-            xmlSkeletonMessage:{value:""}//can be empty
-        },
-        inputs:1,
-        outputs:1,
-        icon: "file.png",
-        label: function() {
-            return this.name||"BC365";
-        },
-        
-        oneditprepare: () => {
-                // Use the Selector to obtain the desired element
-                var servicesDropDown = $("#node-input-servicesDropDown");
-                var servicesMethods = $("#node-input-servicesMethods");
-                var loadingIndicator = $("#node-loadingIndicator");
-                var soapURL = '';
-                var parametersElement = document.getElementById("node-input-parameters");
-
-                var parametersValue = "elaborazione dei parametri in corso..";
-
-                parametersElement.textContent = parametersValue;
-            
-            
-                var isServicesMethodsInitialized = false; // Flag to track the inizialization of servicesMethods
-
-                var server =  $("#node-input-server").val();
-
-                $.ajax({
-                    url: server+'/wrapperoauth2',//da prendere nella configurazione
-                    type: "get",
-                    cors: true,
-                    contentType: 'application/json',
-                    beforeSend: function () {
-                    loadingIndicator.show(); //display the loading indicator before the AJAX request.
-                    },
-                    success: function(response) {
-                        const services = response.value;
-                        const filterServices = services.filter(item => !!item.Published);
-                        const options = filterServices.map(item => ({ label: item.Service_Name, value: item.Service_Name+ ";" + item.SOAPUrl  }));
-                        servicesDropDown.typedInput({
-                        types: [
-                            {
-                              options
-                            }
-                        ]
-                        });
-                        
-                    },
-                    complete: function(response) {
-                        loadingIndicator.hide(); //Hide the loading indicator at the end of the AJAX request.
-                    },
-                    error: function(request, status, error) {
-                        console.log('error request::', error);
-                    }
-                });
-
-                servicesDropDown.on('change', function(event, type, value) {
-                    if(value!= null){
-                        const methodName = value.split(';')[0];
-                        const urlValue = value.split(';')[1];
-                        console.log('VALUE::onCHANGE:::', urlValue);
-                        updateServicesMethods(urlValue, servicesMethods, methodName);
-                    }else{
-                        console.log('value null su onchange');
-                    }
-                    
-                });
-
-                async function updateServicesMethods(selectedValue, servicesMethods, methodName) {
-                    if (!selectedValue) return;
-                    console.log('SELECTEDVALUE::::::',selectedValue);
-
-                    $.ajax({
-                        url: server+'/methods?SOAPUrl=' + selectedValue +'&methodName='+methodName,
-                        type: 'get',
-                        dataType: 'json',
-                        beforeSend: function () {
-                            loadingIndicator.show(); //Display the loading indicator before the AJAX request.
-                        },
-                        success: function(response) {
-                            //options for the select of node-red
-                            let options = [];
-                            Object.keys(response).forEach(function(key) {
-                                var value = response[key];
-                                options.push( { label: key, value: key+";"+JSON.stringify(value) });
-                            });
-                            
-                            console.log('options::::::', options);
-                            const typedInputOptions = {
-                                types: [
-                                    {
-                                        options
-                                    }
-                                ]
-                            };
-
-                            // Verify if servicesMethods was inizialized as TypedInput
-                            if (isServicesMethodsInitialized) {
-                                servicesMethods.typedInput("destroy");
-                            }
-                            
-                            servicesMethods.typedInput(typedInputOptions);                          
-                            isServicesMethodsInitialized = true;
-                        },
-                        complete: function () {
-                            loadingIndicator.hide(); //Hide the loading indicator at the end of the AJAX request.
-                        },
-                            error: function(request, status, error) {
-                            console.log('error request:', error);
-                        }
-                    });
-                };
-                
-                servicesMethods.on('change',async function(event, type, value) {
-                        if (value==null) throw 'value non valido';
-                        const splitValue = value.split(";");
-                        const methodName = splitValue[0];
-                        const paramObj = splitValue[1];
-                        try {
-                            const valueObj = JSON.parse(paramObj);
-                            parametersElement.textContent = JSON.stringify(valueObj,null,2);               
-                        } catch (error) {
-                            console.error("Error:::::", error);
-                        }
-                    
-                });
-        },      
-    });
-           
-</script>
-
-
-<script type="text/html" data-template-name="business-central-connection">
-           
-           
-     <div class="form-row">
-        <label for="node-input-tenant"> tenant</label>
-        <input type="text" id="node-input-tenant" placeholder="tenant">
+<script type="text/html" data-template-name="BC365Config">
+    <div class="form-row">
+        <label for="node-config-input-name"> name</label>
+        <input type="text" id="node-config-input-name" placeholder="name">
     </div>
 
     <div class="form-row">
-        <label for="node-input-clientID"> clientID</label>
-        <input type="text" id="node-input-clientID" placeholder="clientID">
+        <label for="node-config-input-tenant"> tenant</label>
+        <input type="text" id="node-config-input-tenant" placeholder="tenant">
     </div>
 
     <div class="form-row">
-        <label for="node-input-clientSecret">clientSecret</label>
-        <input type="text" id="node-input-clientSecret" placeholder="clientSecret">
+        <label for="node-config-input-clientID"> clientID</label>
+        <input type="text" id="node-config-input-clientID" placeholder="clientID">
+    </div>
+
+    <div class="form-row">
+        <label for="node-config-input-clientSecret">clientSecret</label>
+        <input type="text" id="node-config-input-clientSecret" placeholder="clientSecret">
     </div>
 
      <div class="form-row">
-        <label for="node-input-baseUrl">baseUrl</label>
-        <input type="text" id="node-input-baseUrl" placeholder="baseUrl">
+        <label for="node-config-input-baseUrl">baseUrl</label>
+        <input type="text" id="node-config-input-baseUrl" placeholder="baseUrl">
     </div>
    
     <div class="form-row">
-        <label for="node-input-scope">scope</label>
-        <input type="text" id="node-input-scope" placeholder="scope">
-    </div>
-
-
-    
-    <div class="form-row">
-        <label for="node-input-grantType"> grantType</label>
-        <input type="text" id="node-input-grantType" placeholder="grantType">
+        <label for="node-config-input--scope">scope</label>
+        <input type="text" id="node-config-input-scope" placeholder="scope">
     </div>
     
     <div class="form-row">
-        <label for="node-input-code">code</label>
-        <input type="text" id="node-input-code" placeholder="code">
+        <label for="node-config-input-grantType"> grantType</label>
+        <input type="text" id="node-config-input-grantType" placeholder="grantType">
+    </div>
+    
+    <div class="form-row">
+        <label for="node-config-input-code">code</label>
+        <input type="text" id="node-config-input-code" placeholder="code">
     </div>
 
     <div class="form-row">
-        <label for="node-input-redirectUri">redirectUri</label>
-        <input type="text" id="node-input-redirectUri" placeholder="redirectUri">
+        <label for="node-config-input-redirectUri">redirectUri</label>
+        <input type="text" id="node-config-input-redirectUri" placeholder="redirectUri">
     </div>
 
     <div class="form-row">
-        <label for="node-input-environment">environment</label>
-        <input type="text" id="node-input-environment" placeholder="environment">
+        <label for="node-config-input-environment">environment</label>
+        <input type="text" id="node-config-input-environment" placeholder="environment">
     </div>
       <div class="form-row">
-        <label for="node-input-company">company</label>
-        <input type="text" id="node-input-company" placeholder="company">
+        <label for="node-config-input-company">company</label>
+        <input type="text" id="node-config-input-company" placeholder="company">
     </div>
     <div class="form-row">
-        <label for="node-input-append">append</label>
-        <input type="text" id="node-input-append" placeholder="append">
+        <label for="node-config-input-append">append</label>
+        <input type="text" id="node-config-input-append" placeholder="append">
     </div>
     <div class="form-row">
-        <label for="node-input-server">server</label>
-        <input type="text" id="node-input-server" placeholder="server">
+        <label for="node-config-input-server">server</label>
+        <input type="text" id="node-config-input-server" placeholder="server">
     </div>
     <div id="node-loadingIndicator"  style="display: none;color:#ff0000; text:align-center" >Loading...</div>
     <div class="form-row">
-        <label for="node-input-servicesDropDown">Seleziona il Servizio Web</label>
-        <input type="text" id="node-input-servicesDropDown">
+        <label for="node-config-input-servicesDropDown">Seleziona il Servizio Web</label>
+        <input type="text" id="node-config-input-servicesDropDown">
     </div>
 
     <div class="form-row">
-        <label for="node-input-servicesMethods">Seleziona il Metodo</label>
-        <input type="text" id="node-input-servicesMethods">
+        <label for="node-config-input-servicesMethods">Seleziona il Metodo</label>
+        <input type="text" id="node-config-input-servicesMethods">
     </div>
     <div class="form-row">
-        <label for="node-input-parameters">Parametri del Metodo Selezionato</label>
+        <label for="node-config-input-parameters">Parametri del Metodo Selezionato</label>
         <pre>
-            <code type="text" id="node-input-parameters"></code>
+            <code type="text" id="node-config-input-parameters"></code>
         </pre>
     </div>
 </script>
 
-<script type="text/html" data-help-name="business-central-connection">
+<script type="text/html" data-help-name="BC365Config">
     <p>to Make OAuth2, to Create SOAP Request, to Send SOAP Request</p>
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('BC365Config', {
+        category: 'config',
+        color: '#a6bbcf',
+        defaults: {
+            name: { value: "", required: true },//cannot be empty,
+            tenant: { value: "", required: true },//cannot be empty
+            clientID: { value: "", required: true },//cannot be empty
+            clientSecret: { value: "", required: true },//cannot be empty
+            baseUrl: { value: "https://api.businesscentral.dynamics.com/v2.0/", required: true },
+            scope: { value: "https://api.businesscentral.dynamics.com/.default", required: true },//cannot be empty
+            grantType: { value: "client_credentials", required: true },//cannot be empty
+            code: { value: "", required: true }, //cannot be empty
+            redirectUri: { value: "/oauth2/redirect_uri", required: true }, //cannot be empty
+            servicesDropDown: { value: "http://127.0.0.1:20220", required: true },//cannot be empty
+            servicesMethods: { value: "" },//can be empty
+            environment: { value: "", required: true },//cannot be empty
+            company: { value: "", required: true },//cannot be empty
+            append: { value: "", required: true },//cannot be empty
+            accessToken: { value: "" },//can be empty
+            server: { value: "", required: true },
+            xmlSkeletonMessage: { value: "" }//can be empty
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "file.png",
+        label: function () {
+            return this.name || "BC365";
+        },
+
+        oneditprepare: () => {
+            // Use the Selector to obtain the desired element
+            const clientID = $("#node-config-input-clientID");
+            const clientSecret = $("#node-config-input-clientSecret");
+            const grantType = $("#node-config-input-grantType");
+            const scope = $("#node-config-input-scope");
+            const tenant = $("#node-config-input-tenant");
+            const baseUrl = $("#node-config-input-baseUrl");
+            const append = $("#node-config-input-append");
+            const environment = $("#node-config-input-environment");
+            const company = $("#node-config-input-company");
+
+            const servicesDropDown = $("#node-config-input-servicesDropDown");
+            servicesDropDown.attr('disabled', true)
+            const servicesMethods = $("#node-config-input-servicesMethods");
+            servicesMethods.attr('disabled', true)
+
+            const loadingIndicator = $("#node-loadingIndicator");
+            let soapURL = '';
+            const parametersElement = document.getElementById("node-config-input-parameters");
+
+            let isServicesMethodsInitialized = false; // Flag to track the inizialization of servicesMethods
+
+            const server = $("#node-config-input-server").val();
+
+            function updateServicesMethods(selectedValue, servicesMethods, methodName) {
+                if (!selectedValue) return;
+                console.log('updateServicesMethods', selectedValue);
+                var dataRequest = JSON.stringify({
+                    "client_id": clientID.val(),
+                    "client_secret": clientSecret.val(),
+                    "grant_type": grantType.val(),
+                    "scope": scope.val(),
+                    "tenant": tenant.val(),
+                    "baseUrl": baseUrl.val(),
+                    "append": append.val(),
+                    "environment" : environment.val(),
+                    "company": company.val(),
+                    "SOAPUrl": selectedValue,
+                    "methodName" : methodName,
+                    "server": server
+                })
+                $.ajax({
+                    url: `${server}/methods`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: dataRequest,
+                    beforeSend: function () {
+                        loadingIndicator.show(); //Display the loading indicator before the AJAX request.
+                    },
+                    success: function (response) {
+                        //options for the select of node-red
+                        let options = [];
+                        Object.keys(response).forEach(function (key) {
+                            var value = response[key];
+                            options.push({ label: key, value: key + ";" + JSON.stringify(value) });
+                        });
+
+                        const typedInputOptions = {
+                            types: [
+                                {
+                                    options
+                                }
+                            ]
+                        };
+                        // Verify if servicesMethods was inizialized as TypedInput
+                        if (isServicesMethodsInitialized) {
+                            servicesMethods.typedInput("destroy");
+                        }
+
+                        servicesMethods.typedInput(typedInputOptions);
+                        isServicesMethodsInitialized = true;
+                    },
+                    complete: function () {
+                        loadingIndicator.hide(); //Hide the loading indicator at the end of the AJAX request.
+                    },
+                    error: function (request, status, error) {
+                        console.log('error request:', error);
+                    }
+                });
+            };
+
+            function getOdataCompany() {
+                const dataRequest = JSON.stringify({
+                    "client_id": clientID.val(),
+                    "client_secret": clientSecret.val(),
+                    "grant_type": grantType.val(),
+                    "scope": scope.val(),
+                    "tenant": tenant.val(),
+                    "baseUrl": baseUrl.val(),
+                    "append": append.val(),
+                    "environment" : environment.val(),
+                    "company": company.val()
+                })
+                if (!clientID.val() || !clientSecret.val() || !grantType.val() || !scope.val() || !tenant.val() || !baseUrl.val() || !append.val() || !environment.val() || !company.val()) return;
+                $.ajax({
+                    url: `${server}/odatav4/company`,
+                    type: "POST",
+                    contentType: 'application/json',
+                    data: dataRequest,
+                    beforeSend: function () {
+                        loadingIndicator.show(); //display the loading indicator before the AJAX request.
+                    },
+                    success: function (response) {
+                        const services = response.value;
+                        const filterServices = services.filter(item => !!item.Published);
+                        const options = filterServices.map(item => ({ label: item.Service_Name, value: item.Service_Name + ";" + item.SOAPUrl }));
+                        servicesDropDown.typedInput({
+                            types: [
+                                {
+                                    options
+                                }
+                            ]
+                        });
+
+                    },
+                    complete: function (response) {
+                        loadingIndicator.hide(); //Hide the loading indicator at the end of the AJAX request.
+                    },
+                    error: function (request, status, error) {
+                        console.log('error request::', error);
+                        loadingIndicator.hide(); //Hide the loading indicator at the end of the AJAX request.
+                        alert(`error request: ${server}/odatav4/company`)
+                    }
+                });
+            }
+           
+            
+            getOdataCompany()
+
+            //events 
+            servicesDropDown.on('change', function (event, type, value) {
+                if (value != null) {
+                    const methodName = value.split(';')[0];
+                    const urlValue = value.split(';')[1];
+                    updateServicesMethods(urlValue, servicesMethods, methodName);
+                } else {
+                    console.log('value null su onchange');
+                }
+            });
+           
+            servicesMethods.on('change', async function (event, type, value) {
+                if (value == null) throw 'value not valid';
+                const splitValue = value.split(";");
+                const methodName = splitValue[0];
+                const paramObj = splitValue[1];
+                try {
+                    const valueObj = JSON.parse(paramObj);
+                    parametersElement.textContent = JSON.stringify(valueObj, null, 2);
+                } catch (error) {
+                    console.error("servicesMethods:", error);
+                }
+            });
+        },
+    });
+</script>
+
+
+
+<script type="text/html" data-template-name="BC365Connection">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i></label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-setting"><i class="fa fa-database"></i> </label>
+        <input type="text" id="node-input-setting">
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('BC365Connection', {
+        category: 'BC365Connection',
+        color: '#a6bbcf',
+        defaults: {
+            setting: { type: "BC365Config", required: true },
+            name: { value: "BC365Connection" }
+        },
+        inputs: 1,
+        outputs: 1,
+        label: function () {
+            var levelNode = RED.nodes.node(this.setting);
+            return "BC365"
+            // return this.name || (levelNode ? levelNode.name : "BC365");
+        },
+        labelStyle: function () {
+            return "node_label_italic"
+        }
+    });
 </script>
