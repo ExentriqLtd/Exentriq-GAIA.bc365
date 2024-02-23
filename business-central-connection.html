@@ -93,15 +93,15 @@
             baseUrl: { value: "https://api.businesscentral.dynamics.com/v2.0/", required: true },
             scope: { value: "https://api.businesscentral.dynamics.com/.default", required: true },//cannot be empty
             grantType: { value: "client_credentials", required: true },//cannot be empty
-            code: { value: "", required: true }, //cannot be empty
+            code: { value: "code", required: true }, //cannot be empty
             redirectUri: { value: "/oauth2/redirect_uri", required: true }, //cannot be empty
             servicesDropDown: { value: "http://127.0.0.1:20220", required: true },//cannot be empty
             servicesMethods: { value: "" },//can be empty
-            environment: { value: "", required: true },//cannot be empty
+            environment: { value: "Production", required: true },//cannot be empty
             company: { value: "", required: true },//cannot be empty
-            append: { value: "", required: true },//cannot be empty
+            append: { value: "ServiziWeb", required: true },//cannot be empty
             accessToken: { value: "" },//can be empty
-            server: { value: "", required: true },
+            server: { value: "http://localhost:20220", required: true },
             xmlSkeletonMessage: { value: "" }//can be empty
         },
         inputs: 1,
